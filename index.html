@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRETOP Smart Targeter — 대구 북구 전체 행정동 기업 섭외 대시보드</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/lucide@0.454.0/dist/umd/lucide.js';"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --brand:#00C7A9;
+    --brand-dark:#00473B;
+    --brand-muted:#7C9490;
+    --navy-950:#00C7A9;
+    --navy-900:#00473B;
+    --navy-700:#00695A;
+    --ink:#0B2B26;
+    --ink-muted:#7C9490;
+    --paper:#F5FAF9;
+    --surface:#FFFFFF;
+    --line:#D6E6E2;
+    --gold:#00C7A9;
+    --gold-soft:#E3F6F2;
+    --teal:#00937A;
+    --teal-soft:#E3F6F2;
+    --rust:#7C9490;
+    --rust-soft:#F0F4F3;
+    --blue-realtop:#00473B;
+    --blue-soft:#E3F6F2;
+  }
+  *{font-family:'Pretendard', -apple-system, sans-serif !important;}
+  .mono, .font-mono{font-family:'Pretendard', -apple-system, sans-serif !important; font-variant-numeric: tabular-nums;}
+  body{background:var(--paper); color:var(--ink);}
+  .card{background:var(--surface); border:1px solid var(--line); box-shadow:0 1px 2px rgba(11,43,38,.04), 0 4px 14px rgba(11,43,38,.06);}
+  .company-card{transition: border-color .15s ease, box-shadow .15s ease, transform .1s ease;}
+  .company-card:hover{transform: translateY(-1px);}
+  .company-card.selected{border-color:var(--navy-950) !important; border-width:1.5px !important; box-shadow:0 2px 10px rgba(0,199,169,.18);}
+  .btn-primary{background:var(--navy-950); transition: background .15s ease;}
+  .btn-primary:hover{background:var(--navy-700);}
+  .btn-realtop{background:var(--blue-realtop); transition: background .15s ease;}
+  .btn-realtop:hover{background:#00A88F;}
+  .tab-btn.active {
+    background: var(--gold);
+    color: #ffffff;
+    font-weight: 700;
+  }
+  .badge{display:inline-flex; align-items:center; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700;}
+
+  /* ============ AI 기능 강조 스타일 (기본 브랜드색 #00C7A9 기반 + 노랑→초록 그라데이션으로 AI 느낌 부각) ============ */
+  :root{
+    --ai-grad: linear-gradient(120deg, #FFD54A 0%, #00C7A9 52%, #22D3A7 100%);
+    --ai-grad-soft: linear-gradient(120deg, rgba(255,213,74,.14) 0%, rgba(0,199,169,.10) 55%, rgba(34,211,167,.14) 100%);
+  }
+  .ai-wrap{ background:var(--ai-grad); padding:2px; border-radius:14px; box-shadow:0 3px 16px rgba(0,199,169,.22); }
+  .ai-wrap-inner{ border-radius:12px; overflow:hidden; }
+  .ai-badge{
+    display:inline-flex; align-items:center; gap:4px; padding:2px 9px; border-radius:9999px;
+    font-size:10.5px; font-weight:800; color:#00473B; background:var(--ai-grad); letter-spacing:.02em;
+    box-shadow:0 1px 4px rgba(0,199,169,.35);
+  }
+  .ai-badge i{ color:#00473B; }
+  .ai-panel{ background:var(--ai-grad-soft); border:1px solid rgba(0,199,169,.45); }
+  .ai-btn{
+    background:var(--ai-grad); color:#00332A; font-weight:800; border:none;
+    box-shadow:0 2px 10px rgba(0,199,169,.30); transition:filter .15s ease, transform .1s ease;
+  }
+  .ai-btn:hover{ filter:brightness(1.05); transform:translateY(-1px); }
+  .ai-wrap-pill{ background:var(--ai-grad); padding:2px; border-radius:9999px; display:inline-flex; box-shadow:0 0 0 1.5px #fff, 0 2px 10px rgba(0,199,169,.35); }
+
+  /* ============ MOBILE READABILITY (<=768px) ============ */
+  .tab-label-short{ display:none; }
+
+  @media (max-width: 768px) {
+    html{ -webkit-text-size-adjust:100%; }
+    body{ font-size:14px; }
+
+    /* 어떤 flex 행이든 폭이 부족하면 줄바꿈되도록(제목+뱃지 겹침/글자쪼개짐 방지) */
+    .flex{ flex-wrap:wrap; }
+    .shrink-0{ flex-shrink:0; }
+
+    /* 헤더: 로고/제목 줄바꿈 + 액션 버튼 wrap */
+    header{ row-gap:10px; padding:10px 12px !important; }
+    header h1{ font-size:13px; }
+    #header-actions{ width:100%; row-gap:8px; }
+    #header-actions button span:not(.w-4){ font-size:11px; }
+    #header-meta{ display:none; } /* 지점/담당자/연동 상태는 모바일에서 숨김 → 핵심 알림 버튼에 집중 */
+
+    /* 알림 드롭다운 모달: 화면 폭에 맞춰 고정폭 대신 유동폭 */
+    #aiAlertModal, #churnAlertModal{
+      position:fixed !important;
+      left:8px !important; right:8px !important;
+      top:64px !important;
+      width:auto !important; max-width:none !important;
+    }
+
+    /* 3단계 플로우 탭바: 숫자 배지 위 + 짧은 라벨 아래로, 가로 스퀴즈 방지 */
+    #stepflow-bar{ padding-left:10px !important; padding-right:10px !important; }
+    #stepflow-label, #stepflow-tag{ display:none; }
+    #stepflow-tabs{ gap:6px; }
+    #stepflow-tabs .tab-btn{ flex-direction:column; padding:8px 2px !important; gap:4px !important; }
+    .tab-label-full{ display:none; }
+    .tab-label-short{ display:inline; }
+    .tab-label{ font-size:11px; line-height:1.2; white-space:nowrap; }
+
+    /* 메인 컨테이너 여백 축소 */
+    #main-container{ padding:12px !important; }
+    .space-y-5 > * + *{ margin-top:14px !important; }
+
+    /* 카드 내부 여백 축소 */
+    .card{ padding-left:14px !important; padding-right:14px !important; }
+
+    /* 고정 2/3단 그리드 → 1단으로 재배치 (가독성 최우선) */
+    .grid-cols-2, .grid-cols-3{ grid-template-columns:1fr !important; }
+    .grid-cols-12{ row-gap:16px; }
+
+    /* 회사 리스트 스크롤 영역: 뷰포트 기준으로 축소 */
+    #company-list-container{ max-height:56vh !important; }
+
+    /* 표: 컨테이너를 가로 스크롤시키고, 표 자체 구조는 유지(글자 쪼개짐 방지) */
+    .table-scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -14px; padding:0 14px 4px; }
+    .table-scroll table{ min-width:640px; }
+    .table-scroll th, .table-scroll td{ white-space:nowrap; }
+
+    /* 상세 리포트 상단 요약 카드: 버튼이 아래로 자연스럽게 내려가도록 */
+    .card.flex.justify-between.items-center{ flex-direction:column; align-items:flex-start; gap:12px; }
+
+    /* 너무 작은 보조 텍스트 최소 가독 크기 확보 */
+    .text-\[10px\], .text-\[10\.5px\]{ font-size:11.5px !important; }
+    .text-\[11px\]{ font-size:12px !important; }
+
+    /* 필터바 select 박스가 폭을 넘지 않도록 */
+    #view-tab-1 select{ max-width:52vw; }
+  }
+
+  /* PRINT STYLES FOR PITCH DECK */
+  @media print {
+    body * { visibility: hidden; }
+    #proposalModal, #proposalModal * { visibility: visible; }
+    #proposalModal { position: absolute; left: 0; top: 0; width: 100%; height: auto; background: white !important; }
+    .no-print { display: none !important; }
+  }
+</style>
+</head>
+<body class="antialiased">
+
+<!-- ============ TOP BAR ============ -->
+<header class="text-white px-6 py-3.5 flex justify-between items-center relative z-20" style="background:var(--navy-950); box-shadow:0 2px 12px rgba(0,71,59,.18);">
+  <div class="flex items-center space-x-3">
+    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style="background:var(--gold);">
+      <i data-lucide="landmark" class="w-4.5 h-4.5 text-white"></i>
+    </div>
+    <div>
+      <h1 class="text-2xl font-black tracking-wide leading-none">iMCRE-P</h1>
+      <p class="text-[11px] text-white/90 mt-1.5 mono">나의 기업여신 파트너</p>
+    </div>
+  </div>
+  
+  <div id="header-actions" class="flex items-center space-x-3 text-xs text-white/60">
+    <!-- 영업 타깃 알림 -->
+    <div class="ai-wrap-pill">
+      <button onclick="toggleAlertModal()" class="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white font-bold bg-[#00473B] hover:bg-[#00695A] transition">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-white"></i>
+        <span>🎯 영업 타깃 알림</span>
+        <span class="w-4 h-4 rounded-full bg-white text-[#00473B] text-[10px] flex items-center justify-center font-bold">4</span>
+      </button>
+    </div>
+
+    <!-- 거래처 이탈징후 알림 -->
+    <div class="ai-wrap-pill">
+      <button onclick="toggleChurnModal()" class="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white font-bold bg-[#00473B] hover:bg-[#00695A] transition">
+        <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-white"></i>
+        <span>🚨 거래처 이탈징후</span>
+        <span class="w-4 h-4 rounded-full bg-white text-[#00473B] text-[10px] flex items-center justify-center font-bold">3</span>
+      </button>
+    </div>
+
+    <div id="header-meta" class="flex items-center space-x-3">
+      <div class="w-px h-4 bg-white/15"></div>
+      <span class="flex items-center text-white/90 font-semibold"><i data-lucide="map-pin" class="w-3.5 h-3.5 mr-1.5"></i>동서변지점</span>
+      <div class="w-px h-4 bg-white/15"></div>
+      <span class="flex items-center text-white/85">
+        <span class="w-1.5 h-1.5 rounded-full mr-2" style="background:#00C7A9;"></span>CRETOP / REALTOP 연동중
+      </span>
+    </div>
+  </div>
+</header>
+
+<!-- TARGET ALERT MODAL -->
+<div id="aiAlertModal" class="hidden absolute right-48 top-14 w-96 card rounded-xl shadow-2xl z-50 overflow-hidden border-2 border-[#00C7A9]">
+  <div class="px-4 py-3 bg-[#00473B] text-white flex justify-between items-center">
+    <div class="flex items-center gap-2">
+      <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+      <h3 class="text-xs font-bold">🎯 주요 영업 타깃 (핵심 시그널)</h3>
+    </div>
+    <button onclick="toggleAlertModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+  </div>
+  <div class="p-3 space-y-2 bg-white text-xs">
+    <div onclick="selectCompanyById(0); toggleAlertModal();" class="p-3 bg-white border rounded-xl hover:border-[#00937A] cursor-pointer transition">
+      <div class="flex justify-between font-bold text-slate-800">
+        <span>(주)고성정밀</span>
+        <span class="text-[#00937A] font-mono text-[11px] font-bold">⏰ [만기도래]</span>
+      </div>
+      <p class="text-[11px] text-slate-500 mt-1">타행 대출 20억 2개월 내 만기도래 포착</p>
+    </div>
+    <div onclick="selectCompanyById(5); toggleAlertModal();" class="p-3 bg-white border rounded-xl hover:border-[#00937A] cursor-pointer transition">
+      <div class="flex justify-between font-bold text-slate-800">
+        <span>(주)칠성유통</span>
+        <span class="text-[#00937A] font-mono text-[11px] font-bold">📈 [신용등급 상향]</span>
+      </div>
+      <p class="text-[11px] text-slate-500 mt-1">CRETOP 정기 평가 신용등급 상향 (BB+ → BBB-)</p>
+    </div>
+    <div onclick="selectCompanyById(10); toggleAlertModal();" class="p-3 bg-white border rounded-xl hover:border-[#00937A] cursor-pointer transition">
+      <div class="flex justify-between font-bold text-slate-800">
+        <span>(주)침산금속</span>
+        <span class="text-[#00937A] font-mono text-[11px] font-bold">💰 [한은 C2 자금 적격]</span>
+      </div>
+      <p class="text-[11px] text-slate-500 mt-1">한국은행 C2 자금 지원 대상 요건 충족 포착</p>
+    </div>
+    <div onclick="selectCompanyById(40); toggleAlertModal();" class="p-3 bg-white border rounded-xl hover:border-[#00937A] cursor-pointer transition">
+      <div class="flex justify-between font-bold text-slate-800">
+        <span>(주)산격하이텍</span>
+        <span class="text-[#00937A] font-mono text-[11px] font-bold">✅ [EW등급 상향]</span>
+      </div>
+      <p class="text-[11px] text-slate-500 mt-1">CRETOP 조기경보(EW) 등급 정상 상향 개선</p>
+    </div>
+  </div>
+</div>
+
+<!-- 거래처 이탈징후 알림 모달 -->
+<div id="churnAlertModal" class="hidden absolute right-24 top-14 w-96 card rounded-xl shadow-2xl z-50 overflow-hidden border-2 border-[#00473B]">
+  <div class="px-4 py-3 bg-[#00473B] text-white flex justify-between items-center">
+    <div class="flex items-center gap-2">
+      <i data-lucide="alert-triangle" class="w-4 h-4 text-white"></i>
+      <h3 class="text-xs font-bold">🚨 동서변지점 근저당 설정 사업장 타기관 발급 감지</h3>
+    </div>
+    <button onclick="toggleChurnModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+  </div>
+  <div class="p-2 bg-[#E3F6F2] text-[11px] text-[#00473B] border-b border-[#D6E6E2] px-3 py-1.5 font-bold">
+    📍 조회 지점: 동서변지점 (근저당 설정 담보물)
+  </div>
+  <div class="p-3 space-y-2 bg-white text-xs">
+    <div class="p-3 bg-white border border-[#00C7A9] rounded-xl hover:border-[#00937A] transition">
+      <div class="flex justify-between font-bold text-slate-800">
+        <span>(주)노원공업</span>
+        <span class="text-[#00937A] font-mono text-[11px] font-bold">🏦 [KB국민은행 발급]</span>
+      </div>
+      <p class="text-[11px] text-slate-600 mt-1">대구 북구 노원동1가 120-4 (근저당 15억 설정지)</p>
+      <div class="mt-2 text-[10px] text-slate-400 flex justify-between">
+        <span>발급 기관: KB국민은행 대구지역본부</span>
+        <span class="text-[#00937A] font-bold">10분 전</span>
+      </div>
+    </div>
+    <div class="p-3 bg-white border border-[#00C7A9] rounded-xl hover:border-[#00937A] transition">
+      <div class="flex justify-between font-bold text-slate-800">
+        <span>(주)검단물류</span>
+        <span class="text-[#00937A] font-mono text-[11px] font-bold">🏦 [신한은행 발급]</span>
+      </div>
+      <p class="text-[11px] text-slate-600 mt-1">대구 북구 검단동 450-12 (근저당 22억 설정지)</p>
+      <div class="mt-2 text-[10px] text-slate-400 flex justify-between">
+        <span>발급 기관: 신한은행 칠곡지점</span>
+        <span class="text-[#00937A] font-bold">1시간 전</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 3-STEP FLOW TAB NAVIGATION ============ -->
+<div id="stepflow-bar" class="px-6 py-2.5 border-b" style="background:var(--navy-900); border-color:var(--navy-700);">
+  <div class="max-w-[1600px] mx-auto flex items-center gap-4">
+    <span id="stepflow-label" class="text-[11px] font-semibold text-white/40 mono tracking-widest whitespace-nowrap">ONE-STOP FLOW</span>
+    <div id="stepflow-tabs" class="flex-1 flex items-center justify-between gap-2">
+      <button onclick="switchTab(1)" id="tab-btn-1" class="tab-btn active flex-1 py-2 px-3 rounded-lg text-xs text-white/80 transition flex items-center justify-center gap-2">
+        <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] mono bg-white/20 shrink-0">1</span>
+        <span class="tab-label"><span class="tab-label-full">조건별 타겟 기업 목록</span><span class="tab-label-short">타겟 리스트</span></span>
+      </button>
+      <div class="w-4 h-px bg-white/20"></div>
+      <button onclick="switchTab(2)" id="tab-btn-2" class="tab-btn flex-1 py-2 px-3 rounded-lg text-xs text-white/80 transition flex items-center justify-center gap-2">
+        <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] mono bg-white/20 shrink-0">2</span>
+        <span class="tab-label"><span class="tab-label-full">CRETOP / REALTOP 상세분석</span><span class="tab-label-short">상세분석</span></span>
+      </button>
+      <div class="w-4 h-px bg-white/20"></div>
+      <button onclick="switchTab(3)" id="tab-btn-3" class="tab-btn flex-1 py-2 px-3 rounded-lg text-xs text-white/80 transition flex items-center justify-center gap-2">
+        <span class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] mono bg-white/20 shrink-0">3</span>
+        <span class="tab-label"><span class="tab-label-full">RORWA & 점마진 시산</span><span class="tab-label-short">RORWA 시산</span></span>
+      </button>
+    </div>
+    <span id="stepflow-tag" class="text-[11px] font-bold mono px-2.5 py-1 rounded" style="background:var(--gold-soft); color:var(--teal);">원스톱 실시간 처리</span>
+  </div>
+</div>
+
+<!-- ============ MAIN CONTAINER ============ -->
+<div id="main-container" class="max-w-[1600px] mx-auto p-6 space-y-5">
+
+  <!-- TAB 1: 조건별 타겟 기업 리스트 -->
+  <div id="view-tab-1" class="space-y-5">
+    <div class="card p-3.5 rounded-xl flex flex-wrap items-center justify-between gap-3">
+      <div class="flex flex-wrap items-center gap-3">
+        <label class="flex items-center gap-2 px-3 py-2 rounded-lg" style="background:var(--paper);">
+          <i data-lucide="map-pin" class="w-3.5 h-3.5" style="color:var(--ink-muted);"></i>
+          <span class="text-[11px] font-semibold" style="color:var(--ink-muted);">타겟 권역 (행정동)</span>
+          <select id="dongFilter" onchange="renderCompanyList()" class="bg-transparent text-sm font-bold focus:outline-none cursor-pointer">
+            <option value="ALL">대구 북구 전체 (23개 행정동 / 115개사)</option>
+            <option value="고성동">고성동 (5개사)</option>
+            <option value="칠성동">칠성동 (5개사)</option>
+            <option value="침산1동">침산1동 (5개사)</option>
+            <option value="침산2동">침산2동 (5개사)</option>
+            <option value="침산3동">침산3동 (5개사)</option>
+            <option value="노원동">노원동 (5개사)</option>
+            <option value="산격1동">산격1동 (5개사)</option>
+            <option value="산격2동">산격2동 (5개사)</option>
+            <option value="산격3동">산격3동 (5개사)</option>
+            <option value="산격4동">산격4동 (5개사)</option>
+            <option value="복현1동">복현1동 (5개사)</option>
+            <option value="복현2동">복현2동 (5개사)</option>
+            <option value="검단동">검단동 (5개사)</option>
+            <option value="무태조야동">무태조야동 (5개사)</option>
+            <option value="관문동">관문동 (5개사)</option>
+            <option value="태전1동">태전1동 (5개사)</option>
+            <option value="태전2동">태전2동 (5개사)</option>
+            <option value="구암동">구암동 (5개사)</option>
+            <option value="관음동">관음동 (5개사)</option>
+            <option value="읍내동">읍내동 (5개사)</option>
+            <option value="동천동">동천동 (5개사)</option>
+            <option value="국우동">국우동 (5개사)</option>
+            <option value="서변동">서변동 (5개사)</option>
+          </select>
+        </label>
+
+        <label class="flex items-center gap-2 px-3 py-2 rounded-lg" style="background:var(--paper);">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5" style="color:var(--ink-muted);"></i>
+          <span class="text-[11px] font-semibold" style="color:var(--ink-muted);">신용등급</span>
+          <select class="bg-transparent text-sm font-bold focus:outline-none">
+            <option>전체 등급</option>
+            <option>B등급 이상 (BBB+, BBB0, BBB-, BB+)</option>
+            <option>A등급 이상</option>
+          </select>
+        </label>
+
+        <label class="flex items-center gap-2 px-3 py-2 rounded-lg" style="background:var(--paper);">
+          <i data-lucide="arrow-up-down" class="w-3.5 h-3.5" style="color:var(--ink-muted);"></i>
+          <span class="text-[11px] font-semibold" style="color:var(--ink-muted);">정렬 기준</span>
+          <select id="sortFilter" onchange="renderCompanyList()" class="bg-transparent text-sm font-bold focus:outline-none cursor-pointer">
+            <option value="sales">매출액 순</option>
+            <option value="totalAssets">총자산 순</option>
+            <option value="cash">현금성자산 순</option>
+          </select>
+        </label>
+      </div>
+      <span class="text-[11px] font-semibold mono px-2.5 py-1.5 rounded" style="background:var(--teal-soft); color:var(--teal);">CRETOP 실시간 검증 완료</span>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="grid grid-cols-12 gap-5">
+      <div class="col-span-12 lg:col-span-4 space-y-2.5">
+        <div class="flex items-center justify-between px-1">
+          <h2 class="text-xs font-bold uppercase tracking-wider" style="color:var(--ink-muted);">조건 부합 타겟 기업 리스트</h2>
+          <span id="company-count-label" class="text-[11px] font-bold mono" style="color:var(--ink-muted);">총 115건 검색됨</span>
+        </div>
+
+        <!-- 동적 카드 리스트 영역 -->
+        <div id="company-list-container" class="space-y-2.5 max-h-[720px] overflow-y-auto pr-1"></div>
+      </div>
+
+      <!-- RIGHT Summary -->
+      <div class="col-span-12 lg:col-span-8 space-y-4">
+        <div class="card p-5 rounded-xl flex justify-between items-center">
+          <div>
+            <div class="flex items-center gap-2.5">
+              <h2 id="detail-name" class="text-xl font-extrabold">(주)고성정밀</h2>
+              <span id="detail-grade-badge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full" style="background:var(--navy-950); color:white;">CRETOP BBB0</span>
+              <span id="detail-ew-badge" class="text-[11px] font-bold px-2.5 py-0.5 rounded-full" style="background:var(--teal-soft); color:var(--teal);">EW: 정상</span>
+            </div>
+            <p id="detail-subtext" class="text-[11px] mt-1" style="color:var(--ink-muted);">대표자 이정호 · 자동차 정밀부품 제조 · 대구 북구 고성동1가 12-3 (설립 2015.06)</p>
+          </div>
+          <button onclick="switchTab(2)" class="btn-primary flex items-center gap-1.5 text-white text-xs font-semibold px-4 py-2.5 rounded-lg">
+            <i data-lucide="search" class="w-3.5 h-3.5"></i> 상세 리포트 & 등기 분석
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3.5">
+          <!-- EW(조기경보) 리스크 카드 -->
+          <div id="detail-ew-box" class="rounded-xl p-4" style="background:var(--teal-soft); border:1px solid #00C7A9;">
+            <div class="flex items-center gap-1.5 text-[11px] font-bold mb-2" style="color:var(--teal);">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>EW(조기경보) 리스크
+            </div>
+            <div id="detail-ew-status" class="text-2xl font-black mono" style="color:var(--teal);">
+              <span id="detail-ew-title">양호</span>
+              <span id="detail-ew-status-text" class="text-sm font-bold ml-0.5">(정상)</span>
+            </div>
+            <p id="detail-ew-desc" class="text-[10.5px] mt-1.5 mono" style="color:#00937A;">단기 연체 및 신용 변동 시그널 없음</p>
+          </div>
+          
+          <!-- 추천 섭외 상품 카드 -->
+          <div class="rounded-xl p-4" style="background:var(--rust-soft); border:1px solid #D6E6E2;">
+            <div class="flex items-center gap-1.5 text-[11px] font-bold mb-2" style="color:var(--rust);">
+              <i data-lucide="award" class="w-3.5 h-3.5"></i>추천 섭외 상품
+            </div>
+            <div id="detail-products" class="flex flex-wrap gap-1.5 mt-1"></div>
+            <p id="detail-product-desc" class="text-[10.5px] mt-2 mono" style="color:#00937A;">기업 조건에 맞는 맞춤형 여신 상품</p>
+          </div>
+        </div>
+
+        <div class="card rounded-xl overflow-hidden">
+          <div class="px-5 py-2.5 flex justify-between items-center" style="background:var(--paper); border-bottom:1px solid var(--line);">
+            <h3 class="font-bold text-xs flex items-center" style="color:var(--ink);">
+              <i data-lucide="database" class="w-3.5 h-3.5 mr-2" style="color:var(--teal);"></i>CRETOP 실시간 연동 분석 리포트
+            </h3>
+            <span class="text-[10.5px] mono" style="color:var(--ink-muted);">기준일 2025.12 결산 데이터</span>
+          </div>
+          <div class="p-5 grid grid-cols-2 gap-6 text-xs">
+            <div>
+              <h4 class="text-[10.5px] font-bold uppercase tracking-wider mb-2.5" style="color:var(--ink-muted);">재무분석 및 차입금 역산</h4>
+              <dl class="divide-y" style="border-color:var(--line);">
+                <div class="flex justify-between py-2"><dt style="color:var(--ink-muted);">매출액 / 영업이익</dt><dd id="detail-fin-sales" class="font-bold mono">168.2억 / 14.5억</dd></div>
+                <div class="flex justify-between py-2 px-2 rounded" style="background:rgba(0,199,169,.08);"><dt class="font-bold text-[#00937A]">현금 및 현금성 자산</dt><dd id="detail-fin-cash" class="font-extrabold mono text-[#00937A]">12.8억원</dd></div>
+                <div class="flex justify-between py-2"><dt style="color:var(--ink-muted);">금융비용 (연간 이자)</dt><dd id="detail-fin-interest" class="font-bold mono">137.2백만원</dd></div>
+                <div class="flex justify-between py-2 px-2 rounded" style="background:var(--paper);"><dt style="color:var(--ink-muted);">총 차입 잔액 추정</dt><dd id="detail-fin-loan" class="font-bold mono">28.0억원</dd></div>
+                <div class="flex justify-between py-2 px-2 rounded" style="background:var(--gold-soft);"><dt class="font-semibold" style="color:var(--teal);">추정 타행 평균금리</dt><dd id="detail-fin-rate" class="font-black mono" style="color:var(--teal);">4.90%</dd></div>
+              </dl>
+            </div>
+            <div>
+              <h4 class="text-[10.5px] font-bold uppercase tracking-wider mb-2.5" style="color:var(--ink-muted);">신용/EW 상태 및 여신구조</h4>
+              <dl class="divide-y" style="border-color:var(--line);">
+                <div class="flex justify-between py-2"><dt style="color:var(--ink-muted);">주거래 금융기관</dt><dd id="detail-main-bank" class="font-bold">KB국민은행 (20.0억)</dd></div>
+                <div class="flex justify-between py-2"><dt style="color:var(--ink-muted);">CRETOP EW 등급</dt><dd id="detail-ew-grade-str" class="font-bold" style="color:var(--teal);">정상 (변동 없음)</dd></div>
+                <div class="flex justify-between py-2"><dt style="color:var(--ink-muted);">주요 만기 도래기간</dt><dd id="detail-maturity" class="font-bold" style="color:var(--teal);">D-40 (1.3개월 남음)</dd></div>
+                <div class="flex justify-between py-2 px-2 rounded" style="background:var(--paper);"><dt style="color:var(--ink-muted);">중도상환수수료 여부</dt><dd id="detail-fee" class="font-bold" style="color:var(--teal);">면제 대상 아님 (만기 1개월 초과)</dd></div>
+              </dl>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI 인사이트 요약 (AI 도우미) -->
+        <div class="ai-wrap">
+          <div class="ai-wrap-inner card">
+            <div class="px-5 py-3 flex justify-between items-center flex-wrap gap-2" style="background:var(--navy-900); color:white;">
+              <h3 class="font-bold text-xs flex items-center gap-2">
+                <i data-lucide="brain-circuit" class="w-4 h-4"></i>
+                <span>AI 인사이트 요약</span>
+                <span class="ai-badge"><i data-lucide="sparkles" class="w-3 h-3"></i>AI 도우미</span>
+              </h3>
+              <span class="text-[10.5px] mono text-white/70">재무제표 · 등기부등본 원문 자동 해석</span>
+            </div>
+            <div class="p-4 ai-panel">
+              <p id="ai-insight-text" class="text-[12px] leading-relaxed text-slate-700">
+                재무제표와 등기부등본을 분석 중입니다...
+              </p>
+              <p class="text-[10px] mt-2 text-slate-400">* AI가 원문 데이터를 해석해 자동 생성한 요약이며, 최종 판단은 담당자 확인이 필요합니다.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 추천 부수거래 포인트 영역 -->
+        <div class="ai-wrap">
+        <div class="ai-wrap-inner card">
+          <div class="px-5 py-3 flex justify-between items-center bg-[#00473B] text-white">
+            <h3 class="font-bold text-xs flex items-center gap-2">
+              <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+              <span>재무제표 분석 기반 추천 부수거래 포인트</span>
+              <span class="ai-badge"><i data-lucide="sparkles" class="w-3 h-3"></i>AI 도우미</span>
+            </h3>
+            <span class="text-[10.5px] font-mono text-[#00473B] bg-white px-2.5 py-0.5 rounded border border-white/70 font-bold">AI 생성형 분석 완료</span>
+          </div>
+          <div class="p-4 bg-[#EFF6F5] grid grid-cols-2 gap-4">
+            <div class="bg-white p-4 rounded-xl border border-[#00C7A9] shadow-sm flex flex-col justify-between space-y-3">
+              <div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-xl bg-[#E3F6F2] text-[#00937A] flex items-center justify-center font-bold">
+                      <i data-lucide="wallet" class="w-4 h-4"></i>
+                    </div>
+                    <span class="font-extrabold text-xs text-slate-800">저원가성예금 유치 타겟</span>
+                  </div>
+                  <span id="side-deposit-badge" class="badge bg-[#E3F6F2] text-[#00937A] border border-[#00C7A9]">유치 최우선</span>
+                </div>
+                <div class="mt-3 p-2.5 bg-white rounded-xl border border-slate-100">
+                  <div class="flex justify-between text-[11px] text-slate-500">
+                    <span>재무제표 현금성자산</span>
+                    <span id="side-deposit-cash" class="font-bold text-slate-800 mono">12.8억원</span>
+                  </div>
+                  <div class="flex justify-between text-[11px] text-slate-500 mt-1">
+                    <span>매출액 대비 현금비율</span>
+                    <span id="side-deposit-ratio" class="font-bold text-[#00937A] mono">7.61% (풍부)</span>
+                  </div>
+                </div>
+              </div>
+              <p id="side-deposit-desc" class="text-[11px] text-slate-600 leading-relaxed bg-[#E3F6F2] p-2.5 rounded-xl border border-[#00937A]/35">
+                💡 <strong class="text-[#00937A]">AI 분석:</strong> 현금성 자산이 풍부합니다. MMDA/기업자유예금 유치 타깃으로 추천합니다.
+              </p>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-[#00C7A9] shadow-sm flex flex-col justify-between space-y-3">
+              <div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-xl bg-[#E3F6F2] text-[#00937A] flex items-center justify-center font-bold">
+                      <i data-lucide="piggy-bank" class="w-4 h-4"></i>
+                    </div>
+                    <span class="font-extrabold text-xs text-slate-800">퇴직연금(DB/DC) 제안</span>
+                  </div>
+                  <span id="side-pension-badge" class="badge bg-[#E3F6F2] text-[#00937A] border border-[#00C7A9]">유치 추천</span>
+                </div>
+                <div class="mt-3 p-2.5 bg-white rounded-xl border border-slate-100">
+                  <div class="flex justify-between text-[11px] text-slate-500">
+                    <span>퇴직급여부채 (재무상태표)</span>
+                    <span id="side-pension-liab" class="font-bold text-slate-800 mono">4.20억원</span>
+                  </div>
+                  <div class="flex justify-between text-[11px] text-slate-500 mt-1">
+                    <span>연간 퇴직급여 (손익계산서)</span>
+                    <span id="side-pension-exp" class="font-bold text-[#00937A] mono">8,500만원</span>
+                  </div>
+                </div>
+              </div>
+              <p id="side-pension-desc" class="text-[11px] text-slate-600 leading-relaxed bg-[#E3F6F2] p-2.5 rounded-xl border border-[#00937A]/35">
+                💡 <strong class="text-[#00937A]">AI 분석:</strong> 퇴직급여부채 규모에 따른 퇴직연금 DB/DC 적립 전환 공략이 유효합니다.
+              </p>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- TAB 2: CRETOP & REALTOP 기업 상세분석 -->
+  <div id="view-tab-2" class="space-y-5 hidden">
+    <div class="card p-5 rounded-xl flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div id="tab2-logo" class="w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg text-white shrink-0" style="background:var(--navy-950);">
+          고성
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 id="tab2-name" class="text-xl font-extrabold">(주)고성정밀</h2>
+            <span id="tab2-grade" class="badge" style="background:var(--navy-950); color:white;">신용등급 BBB0</span>
+            <span id="tab2-ew" class="badge" style="background:var(--teal-soft); color:var(--teal);">EW등급: 정상</span>
+            <span class="badge" style="background:var(--blue-soft); color:var(--blue-realtop);">자가사업장 보유</span>
+          </div>
+          <p id="tab2-subtext" class="text-xs mt-1 text-slate-500">
+            대표자: 이정호 · 업종: 자동차 정밀부품 제조 · 주소: 대구광역시 북구 고성동1가 12-3
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="switchTab(3)" class="btn-primary flex items-center gap-1.5 text-white text-xs font-semibold px-4 py-2.5 rounded-lg">
+          <i data-lucide="calculator" class="w-3.5 h-3.5"></i> 다음: RORWA 시산하기
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-12 gap-5">
+      <div class="col-span-12 lg:col-span-8 space-y-4">
+        <div class="card rounded-xl overflow-hidden">
+          <div class="px-5 py-3.5 flex justify-between items-center" style="background:var(--navy-950); color:white;">
+            <div class="flex items-center gap-2">
+              <i data-lucide="calculator" class="w-4 h-4 text-white"></i>
+              <h3 class="font-bold text-xs">CRETOP 연동 금융비용 · 은행별 차입금 역산</h3>
+            </div>
+          </div>
+          <div class="p-5 space-y-5">
+            <div class="grid grid-cols-3 gap-3 bg-white p-4 rounded-xl border border-slate-200">
+              <div>
+                <span class="text-[11px] font-semibold text-slate-500">총 차입금 잔액</span>
+                <div id="tab2-total-loan" class="text-xl font-black mono mt-0.5" style="color:var(--teal);">28.00<span class="text-xs font-bold ml-0.5">억원</span></div>
+              </div>
+              <div>
+                <span class="text-[11px] font-semibold text-slate-500">손익계산서 금융비용(이자)</span>
+                <div id="tab2-total-interest" class="text-xl font-black mono mt-0.5 text-[#00937A]">137.20<span class="text-xs font-bold ml-0.5">백만원</span></div>
+              </div>
+              <div class="bg-[#E3F6F2] p-2.5 rounded border border-[#00C7A9]">
+                <span class="text-[11px] font-extrabold text-[#00937A]">역산 추정 평균이율</span>
+                <div id="tab2-avg-rate" class="text-2xl font-black mono mt-0.5" style="color:var(--teal);">4.90<span class="text-sm font-bold ml-0.5">%</span></div>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="text-xs font-bold mb-2 flex items-center justify-between text-slate-700">
+                <span class="flex items-center"><i data-lucide="landmark" class="w-3.5 h-3.5 mr-1 text-slate-500"></i> CRETOP 기업신용정보 기반 은행별 차입금 현황</span>
+                <span class="text-[11px] text-[#00937A] font-normal">* 각 여신건별 개별 RORWA 시산 가능</span>
+              </h4>
+              <table class="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr class="bg-white text-slate-600 border-y border-slate-200">
+                    <th class="py-2 px-3">금융기관명 (CRETOP)</th>
+                    <th class="py-2 px-3">여신과목</th>
+                    <th class="py-2 px-3 text-right">대출잔액</th>
+                    <th class="py-2 px-3 text-center">추정 금리</th>
+                    <th class="py-2 px-3 text-center">만기도래기간</th>
+                    <th class="py-2 px-3 text-center">RORWA 개별 시산</th>
+                  </tr>
+                </thead>
+                <tbody id="tab2-bank-table" class="divide-y divide-slate-200"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-span-12 lg:col-span-4 space-y-4">
+        <div class="card rounded-xl overflow-hidden h-full flex flex-col justify-between">
+          <div>
+            <div class="px-5 py-3.5 flex justify-between items-center" style="background:var(--navy-900); color:white;">
+              <div class="flex items-center gap-2">
+                <i data-lucide="check-circle-2" class="w-4 h-4 text-white"></i>
+                <h3 class="font-bold text-xs">한국은행 지원자금(C1/C2) 차입가능 여부</h3>
+              </div>
+            </div>
+            <div class="p-5 space-y-3">
+              <div class="flex justify-between items-center p-2.5 rounded bg-white border text-xs">
+                <div><span class="font-bold text-slate-700">1. 기업 업력 판정</span><p id="tab2-years-text" class="text-[10.5px] text-slate-500">설립 11년차 (7년 초과)</p></div>
+                <span id="tab2-years-badge" class="badge bg-[#E3F6F2] text-slate-700">7년 초과</span>
+              </div>
+              <div class="flex justify-between items-center p-2.5 rounded bg-white border text-xs">
+                <div><span class="font-bold text-slate-700">2. 메인/이노비즈 인증</span><p class="text-[10.5px] text-slate-500">Main-Biz / Inno-Biz 인증</p></div>
+                <span id="tab2-c2-biz" class="badge bg-[#E3F6F2] text-[#00937A]">충족 (Inno-Biz)</span>
+              </div>
+              <div class="flex justify-between items-center p-2.5 rounded bg-white border text-xs">
+                <div><span class="font-bold text-slate-700">3. 지식재산권 보유 유무</span><p class="text-[10.5px] text-slate-500">특허증 / 실용신안 등</p></div>
+                <span id="tab2-c2-patent" class="badge bg-[#E3F6F2] text-[#00937A]">보유 (특허 3건)</span>
+              </div>
+              <div class="p-4 rounded-xl bg-[#E3F6F2] border border-[#00C7A9] text-center mt-2">
+                <span id="tab2-fund-type" class="text-[11px] font-bold text-[#00937A] uppercase">한국은행 C2 자금 최종 판정</span>
+                <div id="tab2-c2-final" class="text-xl font-black text-[#00937A] mt-1">차입 가능 (우선 지원)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REALTOP 부동산 등기부등본 연동 -->
+    <div class="card rounded-xl overflow-hidden">
+      <div class="px-5 py-3.5 flex justify-between items-center" style="background:#00473B; color:white;">
+        <div class="flex items-center gap-2">
+          <div class="w-5 h-5 rounded flex items-center justify-center font-black text-[10px]" style="background:var(--blue-realtop);">R</div>
+          <h3 class="font-bold text-xs">REALTOP 연동 — 사업장 부동산 등기부등본 실시간 열람</h3>
+        </div>
+      </div>
+      <div class="p-5">
+        <div class="border rounded-xl p-4 bg-white space-y-3">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="badge bg-[#E3F6F2] text-[#00937A]">자가 사업장</span>
+              <p id="tab2-address" class="text-sm font-bold text-slate-800 mt-1">대구광역시 북구 고성동1가 12-3</p>
+            </div>
+            <button onclick="openRealTopModal()" class="btn-realtop text-white text-xs font-bold px-4 py-2.5 rounded flex items-center gap-1.5 shadow-sm">
+              <i data-lucide="file-text" class="w-3.5 h-3.5"></i> REALTOP 실제 부동산 등기부등본 열람
+            </button>
+          </div>
+          <div class="bg-white p-3.5 rounded text-xs space-y-2 border">
+            <div class="flex justify-between font-bold text-slate-700 border-b pb-2">
+              <span class="text-[#00937A] flex items-center gap-1"><i data-lucide="shield-alert" class="w-3.5 h-3.5"></i> REALTOP 부동산 권리분석 요약</span>
+              <span class="text-slate-500 font-normal">등기부 을구 근저당권 내역</span>
+            </div>
+            <div class="grid grid-cols-3 gap-4 pt-1">
+              <div>
+                <span class="text-[11px] text-slate-500">근저당권 설정일자</span>
+                <p id="tab2-mortgage-date" class="font-mono font-bold text-slate-800 mt-0.5">2021년 04월 20일</p>
+              </div>
+              <div>
+                <span class="text-[11px] text-slate-500">채권최고액 (설정금액)</span>
+                <p id="tab2-mortgage-amount" class="font-mono font-bold text-[#00937A] mt-0.5">24.0억원 (2,400,000,000원)</p>
+              </div>
+              <div>
+                <span class="text-[11px] text-slate-500">근저당권자 / 채무자</span>
+                <p id="tab2-mortgage-holder" class="font-bold text-slate-800 mt-0.5">KB국민은행 / (주)고성정밀</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- TAB 3: RORWA & 점마진 시산 시뮬레이터 -->
+  <div id="view-tab-3" class="space-y-5 hidden">
+    <div class="card p-5 rounded-xl flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div id="tab3-logo" class="w-12 h-12 rounded-xl flex items-center justify-center font-black text-white shrink-0" style="background:var(--navy-950); font-size:9.5px; letter-spacing:-0.3px;">
+          RORWA
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 id="tab3-title" class="text-xl font-extrabold">(주)고성정밀 RORWA & 점마진 실시간 시산</h2>
+            <span id="tab3-grade" class="badge" style="background:var(--navy-950); color:white;">신용: BBB0</span>
+          </div>
+          <p class="text-xs mt-1 text-slate-500">
+            영업점 마진율(%) 수기입력 및 위험가중자산(RWA) 조건에 따른 실시간 RORWA 계산기입니다.
+          </p>
+          <p id="tab3-selected-loan" class="text-[11px] mt-1.5 font-bold" style="color:var(--teal);"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-12 gap-5">
+      <div class="col-span-12 lg:col-span-6 space-y-4">
+        <div class="card rounded-xl overflow-hidden">
+          <div class="px-5 py-3.5 flex justify-between items-center" style="background:var(--navy-950); color:white;">
+            <div class="flex items-center gap-2">
+              <i data-lucide="edit-3" class="w-4 h-4 text-white"></i>
+              <h3 class="font-bold text-xs">분자 (수기 입력 조건) — 제안금액 & 영업점 마진율</h3>
+            </div>
+          </div>
+          <div class="p-5 space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">제안 대출금액 (원금)</label>
+              <div class="relative">
+                <input type="text" inputmode="numeric" id="loanAmount" value="2,000" oninput="onLoanAmountInput()" class="w-full pl-3 pr-12 py-2.5 bg-white border border-slate-300 rounded-lg font-mono font-bold text-slate-800 text-sm">
+                <span class="absolute right-3 top-2.5 text-xs font-bold text-slate-400">백만원</span>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">영업점 마진율 (Spot Margin % - 수기입력)</label>
+              <div class="relative">
+                <input type="number" step="0.01" id="marginRate" value="1.90" oninput="calculateRORWA()" class="w-full pl-3 pr-12 py-2.5 bg-[#E3F6F2] border-2 border-[#00C7A9] rounded-lg font-mono font-black text-[#00937A] text-base">
+                <span class="absolute right-3 top-3 text-xs font-bold text-[#00937A]">%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card rounded-xl overflow-hidden">
+          <div class="px-5 py-3.5 flex justify-between items-center" style="background:var(--navy-900); color:white;">
+            <div class="flex items-center gap-2">
+              <i data-lucide="sliders" class="w-4 h-4 text-white"></i>
+              <h3 class="font-bold text-xs">분모 (위험가중자산 RW 산출 선택)</h3>
+            </div>
+          </div>
+          <div class="p-5 space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">신용등급 선택</label>
+              <select id="creditGrade" onchange="calculateRORWA()" class="w-full p-2.5 bg-white border border-slate-300 rounded-lg text-xs font-bold">
+                <option value="1">1등급 (AAA ~ AA-)</option>
+                <option value="2">2등급 (A+ ~ A-)</option>
+                <option value="3" selected>3등급 (BBB+ ~ BBB-)</option>
+                <option value="4">4등급 (BB+ ~ BB-)</option>
+                <option value="5+">5+등급 (B+ ~ B0)</option>
+                <option value="5">5등급 (B- 이하)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">담보 비율 선택</label>
+              <div class="grid grid-cols-3 gap-2">
+                <label class="cursor-pointer">
+                  <input type="radio" name="collateral" value="full" onchange="calculateRORWA()" class="peer hidden">
+                  <div class="p-2.5 text-center border rounded-lg peer-checked:bg-[#00473B] peer-checked:text-white text-xs font-bold text-slate-600 bg-white">
+                    전액담보
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="collateral" value="80" onchange="calculateRORWA()" class="peer hidden" checked>
+                  <div class="p-2.5 text-center border rounded-lg peer-checked:bg-[#00473B] peer-checked:text-white text-xs font-bold text-slate-600 bg-white">
+                    80% 담보
+                  </div>
+                </label>
+                <label class="cursor-pointer">
+                  <input type="radio" name="collateral" value="credit" onchange="calculateRORWA()" class="peer hidden">
+                  <div class="p-2.5 text-center border rounded-lg peer-checked:bg-[#00473B] peer-checked:text-white text-xs font-bold text-slate-600 bg-white">
+                    전액신용
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-span-12 lg:col-span-6 space-y-4">
+        <div class="card rounded-xl overflow-hidden h-full flex flex-col justify-between">
+          <div>
+            <div class="px-5 py-3.5 flex justify-between items-center" style="background:#00473B; color:white;">
+              <div class="flex items-center gap-2">
+                <i data-lucide="pie-chart" class="w-4 h-4 text-white"></i>
+                <h3 class="font-bold text-xs">시산 결과 (실시간 연산)</h3>
+              </div>
+            </div>
+            <div class="p-5 space-y-5">
+              <div class="grid grid-cols-2 gap-4">
+                <div class="p-4 rounded-xl bg-white border">
+                  <span class="text-[11px] font-bold text-slate-500">영업점 마진율 (Spot Margin)</span>
+                  <div id="res-spot-margin" class="text-3xl font-black mono mt-2 text-slate-900">1.90%</div>
+                </div>
+                <div class="p-4 rounded-xl bg-white border">
+                  <span class="text-[11px] font-bold text-slate-500">적용 RW (위험가중치)</span>
+                  <div id="res-rw" class="text-3xl font-black mono mt-2 text-[#00937A]">29.52%</div>
+                </div>
+              </div>
+
+              <div class="p-3 bg-[#E3F6F2] border border-[#00C7A9] rounded-lg flex justify-between items-center text-xs">
+                <span class="font-bold text-[#00937A]">최종 위험가중자산 (RWA 분모)</span>
+                <span id="res-rwa" class="font-mono font-black text-sm text-[#00937A]">590.40 백만원</span>
+              </div>
+
+              <div class="p-6 rounded-xl text-center" style="background:var(--gold-soft); border:2px solid #00C7A9;">
+                <span class="text-xs font-extrabold uppercase tracking-wider" style="color:var(--teal);">최종 산출 RORWA</span>
+                <div id="res-rorwa" class="text-4xl font-black mono mt-2" style="color:var(--teal);">6.44%</div>
+                <div id="res-status" class="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#E3F6F2] text-[#00937A]">
+                  <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> RORWA 산출 완료
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-4 border-t bg-white flex justify-end items-center gap-2 flex-wrap">
+            <button onclick="openScriptModal()" class="ai-btn flex items-center gap-1.5 text-xs px-4 py-2 rounded">
+              <i data-lucide="message-square-text" class="w-3.5 h-3.5"></i> AI 상담 스크립트 생성 <span class="ai-badge">AI 도우미</span>
+            </button>
+            <button onclick="openProposalModal()" class="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded text-[#00473B] bg-[#EFF6F5] hover:bg-[#00473B] hover:text-white border border-[#D6E6E2] transition shadow-sm">
+              <i data-lucide="file-text" class="w-3.5 h-3.5"></i> AI 자동 제안서 생성 (PDF)
+            </button>
+            <button class="btn-primary text-white text-xs font-bold px-4 py-2 rounded">
+              시산 보고서 저장
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============ REALTOP 부동산 등기부등본 열람 모달 ============ -->
+<div id="realtopDocModal" class="hidden fixed inset-0 bg-[#00473B]/80 z-50 flex items-center justify-center p-4 overflow-y-auto">
+  <div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full border border-slate-200 overflow-hidden my-8">
+    <div class="px-6 py-3.5 bg-[#00473B] text-white flex justify-between items-center">
+      <span class="text-xs font-bold flex items-center gap-2">
+        <i data-lucide="building" class="w-4 h-4 text-white"></i> REALTOP 부동산 인터넷등기소 실시간 열람 시스템
+      </span>
+      <button onclick="closeRealTopModal()" class="text-slate-300 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    
+    <div class="p-6 bg-white text-slate-900 space-y-4 max-h-[80vh] overflow-y-auto font-sans text-xs">
+      <div class="bg-white p-6 rounded shadow border border-slate-300 space-y-4">
+        <div class="text-center border-b-2 border-slate-800 pb-3">
+          <h2 class="text-lg font-black tracking-widest text-slate-900">등 기 사항 전 부 증 명 서</h2>
+          <p class="text-[11px] text-slate-500 mt-0.5">(건물 및 토지 집합건물 / 현재유효사항)</p>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-xs bg-[#00473B] text-white px-2 py-1 mb-1">【표제부】 (건물의 표시)</h3>
+          <table class="w-full border-collapse border border-slate-300 text-[11px]">
+            <tr class="bg-white">
+              <th class="border border-slate-300 p-1.5">표제번호</th>
+              <th class="border border-slate-300 p-1.5">접수</th>
+              <th class="border border-slate-300 p-1.5">소재지번 및 건물번호</th>
+              <th class="border border-slate-300 p-1.5">건물내역</th>
+            </tr>
+            <tr>
+              <td class="border border-slate-300 p-2 text-center">1</td>
+              <td class="border border-slate-300 p-2 text-center">2015년 6월 12일</td>
+              <td id="rt-doc-addr" class="border border-slate-300 p-2 font-bold">대구광역시 북구 고성동1가 12-3</td>
+              <td class="border border-slate-300 p-2">철근콘크리트구조 슬래브지붕 3층 공장 및 사무실</td>
+            </tr>
+          </table>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-xs bg-[#00473B] text-white px-2 py-1 mb-1">【갑구】 (소유권에 관한 사항)</h3>
+          <table class="w-full border-collapse border border-slate-300 text-[11px]">
+            <tr class="bg-white">
+              <th class="border border-slate-300 p-1.5">순위번호</th>
+              <th class="border border-slate-300 p-1.5">등기목적</th>
+              <th class="border border-slate-300 p-1.5">접수</th>
+              <th class="border border-slate-300 p-1.5">등기원인</th>
+              <th class="border border-slate-300 p-1.5">권리자 및 기타사항</th>
+            </tr>
+            <tr>
+              <td class="border border-slate-300 p-2 text-center">1</td>
+              <td class="border border-slate-300 p-2 text-center">소유권이전</td>
+              <td class="border border-slate-300 p-2 text-center">2015년 6월 12일</td>
+              <td class="border border-slate-300 p-2 text-center">2015년 6월 10일 매매</td>
+              <td id="rt-doc-owner" class="border border-slate-300 p-2 font-bold">(주)고성정밀 (170111-******)</td>
+            </tr>
+          </table>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-xs bg-[#00473B] text-white px-2 py-1 mb-1">【을구】 (소유권 이외의 권리에 관한 사항)</h3>
+          <table class="w-full border-collapse border border-slate-300 text-[11px]">
+            <tr class="bg-white">
+              <th class="border border-slate-300 p-1.5">순위번호</th>
+              <th class="border border-slate-300 p-1.5">등기목적</th>
+              <th class="border border-slate-300 p-1.5">접수</th>
+              <th class="border border-slate-300 p-1.5">등기원인</th>
+              <th class="border border-slate-300 p-1.5">권리자 및 기타사항</th>
+            </tr>
+            <tr>
+              <td class="border border-slate-300 p-2 text-center">1</td>
+              <td class="border border-slate-300 p-2 text-center">근저당권설정</td>
+              <td id="rt-doc-date" class="border border-slate-300 p-2 text-center font-bold">2021년 4월 20일</td>
+              <td class="border border-slate-300 p-2 text-center">설정계약</td>
+              <td id="rt-doc-mortgage" class="border border-slate-300 p-2">
+                <span class="font-bold text-[#00937A]">채권최고액 금 2,400,000,000원</span><br>
+                근저당권자: KB국민은행 (서대구지점)<br>
+                채무자: (주)고성정밀
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="pt-4 border-t flex justify-between items-center text-[10px] text-slate-400">
+          <span>발급열람일시: 2026년 09월 07일 실시간 열람</span>
+          <span>REALTOP REAL-TIME VERIFIED</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODIFIED PITCH DECK PROPOSAL MODAL ============ -->
+<div id="proposalModal" class="hidden fixed inset-0 bg-[#00473B]/80 z-50 flex items-center justify-center p-4 overflow-y-auto">
+  <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden">
+    <div class="px-6 py-3.5 bg-[#00473B] text-white flex justify-between items-center no-print">
+      <span class="text-xs font-bold flex items-center gap-2">
+        <i data-lucide="file-check" class="w-4 h-4 text-white"></i> 기업 대표 제출용 맞춤 제안서 미리보기
+        <span class="ai-badge"><i data-lucide="sparkles" class="w-3 h-3"></i>AI 도우미</span>
+      </span>
+      <div class="flex items-center gap-2">
+        <button onclick="window.print()" class="px-3 py-1.5 bg-white hover:bg-white/90 text-[#00937A] font-bold text-xs rounded flex items-center gap-1">
+          <i data-lucide="printer" class="w-3.5 h-3.5"></i> 인쇄 및 PDF 저장
+        </button>
+        <button onclick="closeProposalModal()" class="text-slate-400 hover:text-white p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+    </div>
+
+    <div class="p-8 space-y-6 text-slate-800 bg-white">
+      <div class="border-b-2 border-slate-900 pb-4 flex justify-between items-end">
+        <div>
+          <span class="text-xs font-bold text-[#00937A] tracking-wider">SPECIAL LOAN PROPOSAL</span>
+          <h1 id="prop-comp-name" class="text-2xl font-black text-slate-900 mt-1">(주)고성정밀 귀중</h1>
+          <p class="text-xs text-slate-500 mt-0.5">맞춤형 금융 대환 및 시설/운전자금 지원 제안서</p>
+        </div>
+        <div class="text-right text-xs text-slate-500 font-mono">
+          <p>발행일: 2026.09.07</p>
+          <p class="font-bold text-slate-800">동서변지점 / 김정훈 대리</p>
+        </div>
+      </div>
+
+      <div class="p-5 rounded-xl bg-[#E3F6F2] border border-[#00C7A9] grid grid-cols-2 gap-4 text-center">
+        <div>
+          <span class="text-xs font-bold text-slate-500">제안 대출 금액</span>
+          <div id="prop-loan" class="text-2xl font-black text-slate-900 mt-1">2,000 백만원</div>
+        </div>
+        <div>
+          <span class="text-xs font-bold text-slate-500">제안 적용 금리</span>
+          <div id="prop-rate" class="text-2xl font-black text-[#00937A] mt-1">연 4.25%</div>
+        </div>
+      </div>
+
+      <div class="ai-wrap no-print">
+        <div class="ai-wrap-inner">
+          <div class="p-4 ai-panel">
+            <div class="flex items-center gap-2 mb-2">
+              <i data-lucide="brain-circuit" class="w-3.5 h-3.5" style="color:#00473B;"></i>
+              <span class="text-[11px] font-extrabold" style="color:#00473B;">AI 도우미가 재무데이터·RORWA 시산 결과 기반으로 자동 생성한 제안 요약</span>
+            </div>
+            <p id="prop-ai-summary" class="text-[11.5px] leading-relaxed text-slate-700"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <h3 class="text-xs font-bold text-slate-900 border-l-4 border-[#00473B] pl-2">주요 조건 비교</h3>
+        <table class="w-full text-xs border-collapse border border-slate-200">
+          <tr class="bg-white">
+            <th class="border border-slate-200 p-2.5 text-left">구분</th>
+            <th class="border border-slate-200 p-2.5 text-left">현재 (타 금융기관)</th>
+            <th class="border border-slate-200 p-2.5 text-left bg-[#E3F6F2] text-[#00473B]">당행 제안 조건</th>
+          </tr>
+          <tr>
+            <td class="border border-slate-200 p-2.5 font-bold">주요 금융기관</td>
+            <td id="prop-cur-bank" class="border border-slate-200 p-2.5">KB국민은행 등</td>
+            <td class="border border-slate-200 p-2.5 font-bold text-[#00473B] bg-[#E3F6F2]">당행 주거래 대환 전환</td>
+          </tr>
+          <tr>
+            <td class="border border-slate-200 p-2.5 font-bold">대출 이율</td>
+            <td id="prop-cur-rate" class="border border-slate-200 p-2.5 text-[#00937A] font-bold">연 4.90% (추정)</td>
+            <td id="prop-new-rate" class="border border-slate-200 p-2.5 font-black text-[#00473B] bg-[#E3F6F2]">연 4.25% 수준 (우대)</td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="pt-8 border-t text-xs text-slate-400">
+        <span>* 본 제안서는 공시 데이터 기반 시산 자료이며 실제 승인 조건은 심사 결과에 따라 변경될 수 있습니다.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ AI 상담 스크립트 모달 (AI 도우미) ============ -->
+<div id="aiScriptModal" class="hidden fixed inset-0 bg-[#00473B]/80 z-50 flex items-center justify-center p-4 overflow-y-auto">
+  <div class="bg-white rounded-xl shadow-2xl max-w-xl w-full border border-slate-200 overflow-hidden">
+    <div class="px-6 py-3.5 bg-[#00473B] text-white flex justify-between items-center">
+      <span class="text-xs font-bold flex items-center gap-2">
+        <i data-lucide="message-square-text" class="w-4 h-4 text-white"></i> AI 상담 스크립트 — "이 고객에게 이렇게 접근하세요"
+        <span class="ai-badge"><i data-lucide="sparkles" class="w-3 h-3"></i>AI 도우미</span>
+      </span>
+      <button onclick="closeScriptModal()" class="text-slate-300 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+
+    <div class="p-5 space-y-4 bg-white">
+      <div class="ai-wrap">
+        <div class="ai-wrap-inner">
+          <div class="p-4 ai-panel">
+            <h4 id="script-comp-name" class="text-sm font-black text-slate-900 mb-2">(주)고성정밀</h4>
+            <p id="script-opening" class="text-[12px] leading-relaxed text-slate-700"></p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h5 class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-2">상담 포인트 (순서대로 진행 권장)</h5>
+        <ul id="script-points" class="space-y-2 text-[12px] text-slate-700"></ul>
+      </div>
+
+      <div>
+        <h5 class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 mb-2">예상 반론 대응</h5>
+        <p id="script-objection" class="text-[12px] leading-relaxed text-slate-600 bg-[#F5FAF9] border border-[#D6E6E2] rounded-lg p-3"></p>
+      </div>
+
+      <p class="text-[10px] text-slate-400 pt-1 border-t">* AI가 재무데이터·RORWA 시산 결과를 바탕으로 자동 생성한 상담 스크립트이며, 실제 상담 시 고객 반응에 맞춰 조정하시기 바랍니다.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DATA & JAVASCRIPT ============ -->
+<script>
+  // lucide CDN 로드 실패(네트워크 차단 등) 시에도 스크립트 전체가 멈추지 않도록 안전 래퍼
+  function safeCreateIcons() {
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+      lucide.createIcons();
+    } else {
+      console.warn('lucide 아이콘 라이브러리를 불러오지 못했습니다. 아이콘이 표시되지 않을 수 있습니다.');
+    }
+  }
+</script>
+<script>
+  // 대구 북구 23개 행정동 목록
+  const dongs = [
+    "고성동", "칠성동", "침산1동", "침산2동", "침산3동", "노원동",
+    "산격1동", "산격2동", "산격3동", "산격4동", "복현1동", "복현2동",
+    "검단동", "무태조야동", "관문동", "태전1동", "태전2동", "구암동",
+    "관음동", "읍내동", "동천동", "국우동", "서변동"
+  ];
+
+  // 23개 다양한 업종 풀 (업종, 표준산업분류코드 KSIC, 업종대분류)
+  const industryPool = [
+    { category: "제조업", ind: "자동차 정밀부품", ksic: "C29120" },
+    { category: "도소매업", ind: "기계 및 장비 도매", ksic: "G46510" },
+    { category: "제조업", ind: "금속 가공 및 구조재", ksic: "C25922" },
+    { category: "IT/지식기반", ind: "소프트웨어 개발", ksic: "J62011" },
+    { category: "서비스업", ind: "엔지니어링 서비스", ksic: "M72111" },
+    { category: "제조업", ind: "안경테 및 광학기기", ksic: "C27321" },
+    { category: "도소매업", ind: "전자부품 유통", ksic: "G46521" },
+    { category: "서비스업", ind: "전시 및 행사 대행", ksic: "M75992" },
+    { category: "IT/지식기반", ind: "디지털 콘텐츠 개발", ksic: "J58222" },
+    { category: "제조업", ind: "섬유 및 제직", ksic: "C13211" },
+    { category: "건설업", ind: "종합 건설업", ksic: "F41111" },
+    { category: "서비스업", ind: "교육 및 지식서비스", ksic: "P85501" },
+    { category: "제조업", ind: "산업용 기계 제조", ksic: "C29111" },
+    { category: "도소매업", ind: "농수산물 물류 유통", ksic: "G46201" },
+    { category: "물류업", ind: "화물 운송 및 물류센터", ksic: "H52911" },
+    { category: "제조업", ind: "전기 장비 제조", ksic: "C28111" },
+    { category: "도소매업", ind: "의약품 및 의료기기 도매", ksic: "G46441" },
+    { category: "서비스업", ind: "환경 및 에너지 솔루션", ksic: "E38210" },
+    { category: "제조업", ind: "플라스틱 용기 및 성형", ksic: "C22211" },
+    { category: "건설업", ind: "전기 및 통신 공사업", ksic: "F42201" },
+    { category: "IT/지식기반", ind: "통신 및 데이터 서비스", ksic: "J61220" },
+    { category: "물류업", ind: "보관 및 창고업", ksic: "H52101" },
+    { category: "제조업", ind: "자동차 금형 및 정밀가공", ksic: "C29125" }
+  ];
+
+  const suffixes = ["산업", "정밀", "테크", "유통", "시스템"];
+  const ceos = ["이정호", "김성진", "박팔공", "최칠성", "정노원", "강검단", "윤동천", "장국우", "임태전", "한산격"];
+  const banks = ["KB국민은행", "IBK기업은행", "신한은행", "하나은행", "NH농협은행", "iM뱅크(대구은행)"];
+  const grades = ["BBB+", "BBB0", "BBB-", "BB+", "A-"];
+  const ews = ["정상", "정상", "정상", "주의", "정상"];
+
+  // 대구 북구 23개 행정동 × 5개사 = 총 115개 기업 동적 생성
+  const companyData = [];
+  let globalId = 0;
+
+  dongs.forEach((dong, dongIdx) => {
+    for (let i = 1; i <= 5; i++) {
+      const industryIdx = (dongIdx * 2 + i - 1) % industryPool.length;
+      const tmpl = industryPool[industryIdx];
+
+      const compName = `(주)${dong.replace(/[0-9]/g, '')}${suffixes[i - 1]}`;
+      const ceoName = ceos[(globalId + i) % ceos.length];
+      const mainBankName = banks[(globalId * 3 + i) % banks.length];
+      const gradeStr = grades[(globalId + i) % grades.length];
+      const ewStr = ews[(i + globalId) % ews.length];
+      
+      const sales = Math.round((60 + (globalId % 15) * 18 + i * 12) * 10) / 10;
+      const totalAssets = Math.round((sales * 1.25) * 10) / 10;
+      const cash = Math.round((sales * (0.05 + (i * 0.015))) * 10) / 10;
+      
+      // 차입금 및 금리 역산 정합성 수정
+      const totalLoanVal = Math.round((sales * 0.18) * 10) / 10; // 총차입금 (억원)
+      const calculatedRate = (4.3 + (i * 0.15)); // target rate %
+      const interestVal = Math.round((totalLoanVal * 10 * (calculatedRate / 100)) * 10) / 10; // 금융비용 (백만원) = 차입금(백만) * 금리
+      const exactAvgRate = (interestVal / (totalLoanVal * 10) * 100).toFixed(2); // 역산 금리: [이자 / 총차입금 = 예상금리]
+
+      const estYear = 2010 + (globalId % 13);
+      const yearsOld = 2026 - estYear;
+      const cashRatioNum = Math.round((cash / sales) * 100 * 10) / 10;
+      const mortgageAmtNum = Math.round(totalLoanVal * 1.2 * 10) / 10;
+      const mortgageToAssetNum = Math.round((mortgageAmtNum / totalAssets) * 100);
+
+      // AI 인사이트 요약 (재무제표 + 등기부등본 원문을 읽은 것처럼 자연어로 생성)
+      let aiInsightText;
+      if (ewStr !== "정상") {
+        aiInsightText = `이 회사는 최근 결산에서 매출 대비 차입 부담이 다소 확대되는 추세이며, 등기부등본상 근저당 채권최고액(${mortgageAmtNum}억원)이 총자산의 약 ${mortgageToAssetNum}%를 차지해 담보설정 비중이 낮지 않은 수준입니다. CRETOP 조기경보(EW) 등급이 '주의'로 분류되어 있어 여신 취급 시 정기적인 사후 모니터링이 권장되나, 현재까지 연체·부도 시그널은 확인되지 않습니다.`;
+      } else if (cashRatioNum >= 7) {
+        aiInsightText = `이 회사는 최근 결산에서 매출 대비 현금비중이 ${cashRatioNum}%로 ${tmpl.category} 평균 대비 상위권이며, 담보설정 이력(채권최고액 ${mortgageAmtNum}억원)은 안정적으로 유지되고 있어 현금흐름이 양호한 것으로 판단됩니다. 조기경보 등급도 '정상'을 유지하고 있어 신규 여신 취급에 부담이 없는 재무구조입니다.`;
+      } else {
+        aiInsightText = `이 회사는 매출 규모 대비 현금성자산이 다소 보수적인 수준(현금비중 ${cashRatioNum}%)이나, 등기부등본상 담보설정 금액(${mortgageAmtNum}억원)과 차입금 상환 이력을 볼 때 재무구조는 안정적으로 관리되고 있는 것으로 판단됩니다. 조기경보 등급 '정상', 금융비용 부담도 업종 평균 수준으로 확인됩니다.`;
+      }
+
+      companyData.push({
+        id: globalId,
+        dong: dong,
+        name: compName,
+        logo: dong.substring(0, 2),
+        grade: gradeStr,
+        gradeVal: gradeStr.startsWith('A') ? "2" : (gradeStr.startsWith('BBB') ? "3" : "4"),
+        ew: ewStr,
+        ewTitle: ewStr === "정상" ? "양호" : "주의",
+        ewStatusText: `(${ewStr})`,
+        ewColor: ewStr === "정상" ? "var(--teal)" : "var(--rust)",
+        ewBg: ewStr === "정상" ? "var(--teal-soft)" : "var(--rust-soft)",
+        ewBorder: ewStr === "정상" ? "#00C7A9" : "#D6E6E2",
+        ewDesc: ewStr === "정상" ? "단기 연체 및 신용 변동 시그널 없음" : "단기 연체 및 신용 변동 주의 모니터링 필요",
+        category: tmpl.category,
+        industry: tmpl.ind,
+        ksicCode: tmpl.ksic,
+        address: `대구광역시 북구 ${dong} ${i * 12 + 5}-${i}`,
+        isCapital: false,
+        ceo: ceoName,
+        estYear: estYear,
+        estDate: `${estYear}.0${(i % 9) + 1}`,
+        yearsOld: yearsOld,
+        salesVal: sales,
+        totalAssetsVal: totalAssets,
+        cashVal: cash,
+        sales: `${sales}억 / ${Math.round(sales * 0.08 * 10) / 10}억`,
+        cash: `${cash}억원`,
+        interest: `${interestVal}백만원`,
+        totalLoan: `${totalLoanVal}억원`,
+        avgRate: `${exactAvgRate}%`,
+        mainBank: `${mainBankName} (${Math.round(totalLoanVal * 0.7 * 10) / 10}억)`,
+        maturityPeriod: `D-${20 + i * 15} (${Math.round((20 + i * 15) / 30 * 10) / 10}개월 남음)`,
+        isUnder1Month: (20 + i * 15) <= 30,
+        isTopTarget: i === 1,
+        aiInsight: aiInsightText,
+        cashRatioNum: cashRatioNum,
+        mortgageAmtNum: mortgageAmtNum,
+        depositBadge: cash > 10 ? "유치 최우선" : "유치 가능",
+        depositCash: `${cash}억원`,
+        depositRatio: `${cashRatioNum}%`,
+        depositDesc: `📊 <strong class="text-[#00937A]">AI 분석:</strong> 최근 결산 기준 매출 대비 현금비중이 ${cashRatioNum}%로 ${cash > 10 ? tmpl.category + ' 평균 대비 상위권이며' : '안정적인 수준이며'}, 특히 현금성자산이 ${cash}억원으로 ${cash > 10 ? '급증한' : '견조하게 유지되는'} 점을 볼 때 단기 유동성 확보 목적의 자금일 가능성이 높습니다. MMDA와 함께, 향후 설비투자 계획이 있다면 시설자금대출 부수거래로도 연결할 수 있는 타이밍입니다.`,
+        pensionBadge: yearsOld > 7 ? "유치 추천" : "창업 우수",
+        pensionLiab: `${Math.round(sales * 0.025 * 10) / 10}억원`,
+        pensionExp: `${Math.round(sales * 0.006 * 1000)}만원`,
+        pensionDesc: `📊 <strong class="text-[#00937A]">AI 분석:</strong> 퇴직급여부채 ${Math.round(sales * 0.025 * 10) / 10}억원, 연간 퇴직급여 비용 ${Math.round(sales * 0.006 * 1000)}만원 규모로 ${yearsOld > 7 ? '설립 ' + yearsOld + '년차 안정기에 접어들며 장기 재직인력 비중이 높아지는 추세로 추정되어' : '창업 초기 인력 확충 단계로 판단되어'} DB/DC 퇴직연금 신규 적립 전환 교섭이 유효한 시점입니다.`,
+        bankLoans: [
+          { bank: `${mainBankName} (대구북구지점)`, type: "운전자금대출 (일반자금)", amount: `${Math.round(totalLoanVal * 0.7 * 10) / 10}억원`, rate: `${exactAvgRate}%`, duePeriod: `D-${20 + i * 15}`, numAmt: Math.round(totalLoanVal * 70), numRate: parseFloat(exactAvgRate) },
+          { bank: "IBK기업은행 (칠곡지점)", type: "시설자금대출 (담보)", amount: `${Math.round(totalLoanVal * 0.3 * 10) / 10}억원`, rate: "4.45%", duePeriod: "D-360", numAmt: Math.round(totalLoanVal * 30), numRate: 4.45 }
+        ],
+        mortgageDate: `202${i}년 04월 20일`,
+        mortgageAmount: `${Math.round(totalLoanVal * 1.2 * 10) / 10}억원`,
+        mortgageHolder: `${mainBankName} / ${compName}`,
+        c2Biz: yearsOld <= 7 ? "충족 (Main-Biz)" : "충족 (Inno-Biz)",
+        c2Patent: `보유 (특허 ${i}건)`,
+        c2Final: yearsOld <= 7 ? "차입 가능 (C1 창업·벤처자금)" : "차입 가능 (C2 우선 지원)",
+        loanVal: Math.round(totalLoanVal * 70),
+        marginRateVal: 1.85 + (i * 0.05)
+      });
+
+      globalId++;
+    }
+  });
+
+  let activeSortedList = [];
+  let selectedCompanyId = 0;
+
+  document.addEventListener("DOMContentLoaded", function() {
+    renderCompanyList();
+    safeCreateIcons();
+  });
+
+  function renderCompanyList() {
+    const selectedDong = document.getElementById('dongFilter').value;
+    const sortType = document.getElementById('sortFilter').value;
+
+    if (selectedDong === 'ALL') {
+      activeSortedList = [...companyData];
+    } else {
+      activeSortedList = companyData.filter(c => c.dong === selectedDong);
+    }
+
+    if (sortType === 'sales') {
+      activeSortedList.sort((a, b) => b.salesVal - a.salesVal);
+    } else if (sortType === 'totalAssets') {
+      activeSortedList.sort((a, b) => b.totalAssetsVal - a.totalAssetsVal);
+    } else if (sortType === 'cash') {
+      activeSortedList.sort((a, b) => b.cashVal - a.cashVal);
+    }
+
+    document.getElementById('company-count-label').innerText = `총 ${activeSortedList.length}건 검색됨`;
+
+    const container = document.getElementById('company-list-container');
+    container.innerHTML = '';
+
+    if (activeSortedList.length > 0) {
+      if (!activeSortedList.some(c => c.id === selectedCompanyId)) {
+        selectedCompanyId = activeSortedList[0].id;
+      }
+    }
+
+    activeSortedList.forEach((comp) => {
+      const isSelected = comp.id === selectedCompanyId;
+      const card = document.createElement('div');
+      card.id = 'card-comp-' + comp.id;
+      card.className = `company-card card p-4 rounded-xl cursor-pointer relative ${isSelected ? 'selected' : ''}`;
+      card.onclick = () => selectCompanyById(comp.id);
+
+      let topBadgeHTML = comp.isTopTarget ? `<div class="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded text-white" style="background:var(--gold);">최우선 타겟</div>` : '';
+
+      card.innerHTML = `
+        ${topBadgeHTML}
+        <div class="flex items-center gap-2">
+          <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#E3F6F2] text-slate-800">${comp.dong}</span>
+          <h3 class="font-bold text-base pr-16">${comp.name}</h3>
+        </div>
+        <p class="text-[11px] mt-0.5" style="color:var(--ink-muted);">${comp.industry} [${comp.ksicCode}] · ${comp.address}</p>
+        <div class="flex items-center gap-2 mt-2">
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded" style="background:var(--paper); color:var(--teal);">등급: ${comp.grade}</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded" style="background:${comp.ewBg}; color:${comp.ewColor};">EW: ${comp.ew}</span>
+        </div>
+        <div class="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-3 pt-3 text-[11px] mono" style="border-top:1px dashed var(--line);">
+          <div style="color:var(--ink-muted);">타행 추정금리<br><span class="text-sm font-bold" style="color:var(--ink);">${comp.avgRate}</span></div>
+          <div style="color:var(--ink-muted);">추정 대출 잔액<br><span class="text-sm font-bold" style="color:var(--teal);">${comp.totalLoan}</span></div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+
+    if (activeSortedList.length > 0) {
+      selectCompanyById(selectedCompanyId);
+    }
+  }
+
+  function toggleAlertModal() {
+    document.getElementById('aiAlertModal').classList.toggle('hidden');
+    document.getElementById('churnAlertModal').classList.add('hidden');
+  }
+
+  function toggleChurnModal() {
+    document.getElementById('churnAlertModal').classList.toggle('hidden');
+    document.getElementById('aiAlertModal').classList.add('hidden');
+  }
+
+  function selectCompanyById(id) {
+    selectedCompanyId = id;
+    const comp = companyData.find(c => c.id === id);
+    if (!comp) return;
+
+    activeSortedList.forEach(c => {
+      const card = document.getElementById('card-comp-' + c.id);
+      if (card) {
+        if (c.id === id) card.classList.add('selected');
+        else card.classList.remove('selected');
+      }
+    });
+
+    // 1. TAB 1 데이터 업데이트
+    document.getElementById('detail-name').innerText = comp.name;
+    document.getElementById('detail-grade-badge').innerText = 'CRETOP ' + comp.grade;
+    
+    const ewBadge = document.getElementById('detail-ew-badge');
+    ewBadge.innerText = 'EW: ' + comp.ew;
+    ewBadge.style.background = comp.ewBg;
+    ewBadge.style.color = comp.ewColor;
+    
+    document.getElementById('detail-subtext').innerText = '대표자 ' + comp.ceo + ' · ' + comp.industry + ' [' + comp.ksicCode + '] · ' + comp.address + ' (설립 ' + comp.estDate + ')';
+    
+    const ewBox = document.getElementById('detail-ew-box');
+    ewBox.style.background = comp.ewBg;
+    ewBox.style.borderColor = comp.ewBorder;
+    
+    const ewHeader = ewBox.querySelector('div');
+    ewHeader.style.color = comp.ewColor;
+    
+    document.getElementById('detail-ew-title').innerText = comp.ewTitle || "양호";
+    document.getElementById('detail-ew-status-text').innerText = comp.ewStatusText || ('(' + comp.ew + ')');
+    
+    const ewDesc = document.getElementById('detail-ew-desc');
+    ewDesc.innerText = comp.ewDesc;
+    ewDesc.style.color = comp.ewColor;
+
+    document.getElementById('detail-fin-sales').innerText = comp.sales;
+    document.getElementById('detail-fin-cash').innerText = comp.cash;
+    document.getElementById('detail-fin-interest').innerText = comp.interest;
+    document.getElementById('detail-fin-loan').innerText = comp.totalLoan;
+    document.getElementById('detail-fin-rate').innerText = comp.avgRate;
+    document.getElementById('detail-main-bank').innerText = comp.mainBank;
+    
+    const ewGradeStr = document.getElementById('detail-ew-grade-str');
+    ewGradeStr.innerText = comp.ew + ' (변동 없음)';
+    ewGradeStr.style.color = comp.ewColor;
+    
+    document.getElementById('detail-maturity').innerText = comp.maturityPeriod;
+
+    const aiInsightEl = document.getElementById('ai-insight-text');
+    if (aiInsightEl) aiInsightEl.innerText = comp.aiInsight;
+
+    document.getElementById('side-deposit-badge').innerText = comp.depositBadge;
+    document.getElementById('side-deposit-cash').innerText = comp.depositCash;
+    document.getElementById('side-deposit-ratio').innerText = comp.depositRatio;
+    document.getElementById('side-deposit-desc').innerHTML = comp.depositDesc;
+
+    document.getElementById('side-pension-badge').innerText = comp.pensionBadge;
+    document.getElementById('side-pension-liab').innerText = comp.pensionLiab;
+    document.getElementById('side-pension-exp').innerText = comp.pensionExp;
+    document.getElementById('side-pension-desc').innerHTML = comp.pensionDesc;
+
+    const feeEl = document.getElementById('detail-fee');
+    if (comp.isUnder1Month) {
+      feeEl.innerText = "면제 (만기 1개월 이내 도래)";
+      feeEl.className = "font-bold text-[#00937A]";
+    } else {
+      feeEl.innerText = "발생 (만기 1개월 초과)";
+      feeEl.className = "font-bold text-slate-600";
+    }
+
+    let productHTML = '<span class="badge" style="background:var(--navy-950); color:white;">무브온</span>';
+    if(comp.category === "제조업") {
+      productHTML += '<span class="badge" style="background:var(--gold); color:white;">생산플러스</span>';
+    }
+    document.getElementById('detail-products').innerHTML = productHTML;
+
+    // TAB 2 업데이트: 이자/총차입금 역산 수식 적용
+    document.getElementById('tab2-logo').innerText = comp.logo;
+    document.getElementById('tab2-name').innerText = comp.name;
+    document.getElementById('tab2-grade').innerText = '신용등급 ' + comp.grade;
+    document.getElementById('tab2-ew').innerText = 'EW등급: ' + comp.ew;
+    document.getElementById('tab2-subtext').innerText = '대표자: ' + comp.ceo + ' · 업종: ' + comp.industry + ' [표준산업분류코드: ' + comp.ksicCode + '] · 주소: ' + comp.address;
+
+    const loanNum = parseFloat(comp.totalLoan.replace('억원',''));
+    const interestNum = parseFloat(comp.interest.replace('백만원',''));
+    // 역산 수식: [이자비용(백만원) / (총차입금(억원) * 10)] * 100
+    const calculatedRate = (interestNum / (loanNum * 10) * 100).toFixed(2);
+
+    document.getElementById('tab2-total-loan').innerHTML = loanNum.toFixed(2) + '<span class="text-xs font-bold ml-0.5">억원</span>';
+    document.getElementById('tab2-total-interest').innerHTML = interestNum.toFixed(2) + '<span class="text-xs font-bold ml-0.5">백만원</span>';
+    document.getElementById('tab2-avg-rate').innerHTML = calculatedRate + '<span class="text-sm font-bold ml-0.5">%</span>';
+
+    document.getElementById('tab2-address').innerText = comp.address;
+    document.getElementById('tab2-mortgage-date').innerText = comp.mortgageDate;
+    document.getElementById('tab2-mortgage-amount').innerText = comp.mortgageAmount;
+    document.getElementById('tab2-mortgage-holder').innerText = comp.mortgageHolder;
+
+    const yearText = document.getElementById('tab2-years-text');
+    const yearBadge = document.getElementById('tab2-years-badge');
+    const fundTypeLabel = document.getElementById('tab2-fund-type');
+    
+    if (comp.yearsOld <= 7) {
+      yearText.innerText = `설립 ${comp.yearsOld}년차 (7년 이내 적격)`;
+      yearBadge.innerText = "7년 이내";
+      yearBadge.className = "badge bg-[#E3F6F2] text-[#00937A]";
+      fundTypeLabel.innerText = "한국은행 C1 자금 (창업·벤처) 판정";
+      document.getElementById('tab2-c2-final').innerText = "차입 가능 (C1 자금 지원)";
+    } else {
+      yearText.innerText = `설립 ${comp.yearsOld}년차 (7년 초과)`;
+      yearBadge.innerText = "7년 초과";
+      yearBadge.className = "badge bg-[#E3F6F2] text-slate-700";
+      fundTypeLabel.innerText = "한국은행 C2 자금 (중소기업) 판정";
+      document.getElementById('tab2-c2-final').innerText = comp.c2Final;
+    }
+
+    document.getElementById('tab2-c2-biz').innerText = comp.c2Biz;
+    document.getElementById('tab2-c2-patent').innerText = comp.c2Patent;
+
+    let bankRows = '';
+    comp.bankLoans.forEach((b, idx) => {
+      bankRows += `<tr>
+        <td class="py-2.5 px-3 font-bold text-slate-800">${b.bank}</td>
+        <td class="py-2.5 px-3 text-slate-600 font-medium">${b.type}</td>
+        <td class="py-2.5 px-3 text-right font-mono font-bold text-slate-900">${b.amount}</td>
+        <td class="py-2.5 px-3 text-center font-mono text-[#00937A] font-bold">${b.rate}</td>
+        <td class="py-2.5 px-3 text-center font-mono text-slate-700 font-semibold">${b.duePeriod}</td>
+        <td class="py-2.5 px-3 text-center">
+          <button onclick="simulateBankRORWA(${idx})" class="px-2.5 py-1 bg-[#00473B] hover:bg-[#00695A] text-white font-bold rounded text-[11px] flex items-center gap-1 mx-auto transition">
+            <i data-lucide="calculator" class="w-3 h-3"></i> RORWA 시산
+          </button>
+        </td>
+      </tr>`;
+    });
+    document.getElementById('tab2-bank-table').innerHTML = bankRows;
+
+    // TAB 3 업데이트
+    document.getElementById('tab3-title').innerText = comp.name + ' RORWA & 점마진 실시간 시산';
+    document.getElementById('tab3-grade').innerText = '신용: ' + comp.grade;
+    document.getElementById('loanAmount').value = comp.loanVal.toLocaleString('ko-KR');
+    document.getElementById('marginRate').value = comp.marginRateVal.toFixed(2);
+    document.getElementById('creditGrade').value = comp.gradeVal;
+
+    // 회사를 새로 선택하면 RORWA 산출 기준 대출과목도 기본값(주거래/최대 차입 과목)으로 초기화
+    selectedLoanIndex = 0;
+    updateSelectedLoanBadge(comp);
+
+    calculateRORWA();
+    safeCreateIcons();
+  }
+
+  // 현재 RORWA 산출 대상으로 선택된 "대출과목" 인덱스 (comp.bankLoans 기준)
+  let selectedLoanIndex = 0;
+
+  // 선택된 회사 + 선택된 대출과목 인덱스를 기준으로 실제 대출과목 객체를 반환
+  function getSelectedLoan(comp) {
+    if (!comp || !comp.bankLoans || comp.bankLoans.length === 0) return null;
+    return comp.bankLoans[selectedLoanIndex] || comp.bankLoans[0];
+  }
+
+  // TAB3 상단에 "현재 어떤 대출과목 기준으로 RORWA를 산출 중인지" 표시
+  function updateSelectedLoanBadge(comp) {
+    const badgeEl = document.getElementById('tab3-selected-loan');
+    if (!badgeEl) return;
+    const loan = getSelectedLoan(comp);
+    if (!loan) { badgeEl.innerText = ''; return; }
+    badgeEl.innerHTML = `기준 대출과목: <strong>${loan.bank} · ${loan.type}</strong>`;
+  }
+
+  function simulateBankRORWA(idx) {
+    const comp = companyData.find(c => c.id === selectedCompanyId);
+    if (!comp) return;
+    const loan = comp.bankLoans[idx];
+    if (!loan) return;
+
+    selectedLoanIndex = idx;
+    switchTab(3);
+    document.getElementById('loanAmount').value = loan.numAmt.toLocaleString('ko-KR');
+    document.getElementById('marginRate').value = (loan.numRate - 2.5 > 0 ? (loan.numRate - 2.5).toFixed(2) : 1.80);
+    updateSelectedLoanBadge(comp);
+    calculateRORWA();
+  }
+
+  function switchTab(tabIndex) {
+    document.getElementById('view-tab-1').classList.add('hidden');
+    document.getElementById('view-tab-2').classList.add('hidden');
+    document.getElementById('view-tab-3').classList.add('hidden');
+
+    document.getElementById('tab-btn-1').classList.remove('active');
+    document.getElementById('tab-btn-2').classList.remove('active');
+    document.getElementById('tab-btn-3').classList.remove('active');
+
+    document.getElementById('view-tab-' + tabIndex).classList.remove('hidden');
+    document.getElementById('tab-btn-' + tabIndex).classList.add('active');
+
+    if(tabIndex === 3) calculateRORWA();
+  }
+
+  // "제안 대출금액" 입력값은 천단위 콤마가 포함된 문자열이므로, 콤마를 제거하고 숫자로 파싱
+  function getLoanAmountValue() {
+    const raw = (document.getElementById('loanAmount').value || '').replace(/,/g, '');
+    return parseFloat(raw) || 0;
+  }
+
+  // 입력 중에는 커서 위치를 보존하면서 실시간으로 천단위 콤마를 적용
+  function onLoanAmountInput() {
+    const el = document.getElementById('loanAmount');
+    const prevLen = el.value.length;
+    const prevPos = el.selectionStart;
+
+    const digitsOnly = el.value.replace(/[^\d]/g, '');
+    const num = digitsOnly === '' ? 0 : parseInt(digitsOnly, 10);
+    el.value = num.toLocaleString('ko-KR');
+
+    // 콤마 추가/삭제로 늘어나거나 줄어든 만큼 커서 위치 보정
+    const newLen = el.value.length;
+    const newPos = Math.max(0, (prevPos || newLen) + (newLen - prevLen));
+    el.setSelectionRange(newPos, newPos);
+
+    calculateRORWA();
+  }
+
+  function calculateRORWA() {
+    const loanAmount = getLoanAmountValue();
+    const marginRate = parseFloat(document.getElementById('marginRate').value) || 0;
+    const creditGrade = document.getElementById('creditGrade').value;
+    
+    const targetProfit = loanAmount * (marginRate / 100);
+
+    let collateral = '80';
+    const radios = document.getElementsByName('collateral');
+    for (let r of radios) {
+      if (r.checked) collateral = r.value;
+    }
+
+    // 요구된 RW 등급표 변경사항 적용 (전액담보 / 80%담보 / 전액신용)
+    const rwTable = {
+      '1': { 'full': 7.90, '80': 10.4, 'credit': 18.6 },
+      '2': { 'full': 15.89, '80': 18.51, 'credit': 36.2 },
+      '3': { 'full': 25.86, '80': 29.52, 'credit': 49.1 },
+      '4': { 'full': 34.7, '80': 40.6, 'credit': 61.45 },
+      '5+': { 'full': 37.6, '80': 48.4, 'credit': 74.0 },
+      '5': { 'full': 40.9, '80': 49.1, 'credit': 81.8 }
+    };
+
+    const rw = rwTable[creditGrade] ? rwTable[creditGrade][collateral] : 29.52;
+    const rwa = loanAmount * (rw / 100);
+    const rorwa = rwa > 0 ? (targetProfit / rwa) * 100 : 0;
+
+    document.getElementById('res-spot-margin').innerText = marginRate.toFixed(2) + '%';
+    document.getElementById('res-rw').innerText = rw.toFixed(2) + '%';
+    document.getElementById('res-rwa').innerText = rwa.toFixed(2) + ' 백만원';
+    document.getElementById('res-rorwa').innerText = rorwa.toFixed(2) + '%';
+
+    const statusEl = document.getElementById('res-status');
+    statusEl.className = 'mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#E3F6F2] text-[#00937A]';
+    statusEl.innerHTML = '<i data-lucide="check-circle" class="w-3.5 h-3.5"></i> RORWA 산출 완료';
+    
+    safeCreateIcons();
+  }
+
+  function openRealTopModal() {
+    const comp = companyData.find(c => c.id === selectedCompanyId);
+    if(!comp) return;
+    document.getElementById('rt-doc-addr').innerText = comp.address;
+    document.getElementById('rt-doc-owner').innerText = comp.name + ' (대표이사 ' + comp.ceo + ')';
+    document.getElementById('rt-doc-date').innerText = comp.mortgageDate;
+    document.getElementById('rt-doc-mortgage').innerHTML = `<span class="font-bold text-[#00937A]">채권최고액 금 ${comp.mortgageAmount}</span><br>근저당권자: ${comp.mainBank}<br>채무자: ${comp.name}`;
+    document.getElementById('realtopDocModal').classList.remove('hidden');
+    safeCreateIcons();
+  }
+
+  function closeRealTopModal() {
+    document.getElementById('realtopDocModal').classList.add('hidden');
+  }
+
+  function openProposalModal() {
+    const comp = companyData.find(c => c.id === selectedCompanyId);
+    if(!comp) return;
+
+    // loanAmount 입력값은 이미 "백만원" 단위이므로 억원으로 환산(÷10)하지 않고 그대로 백만원 단위로 표시
+    // (과거 코드가 ÷10만 적용되어 실제보다 10배 과대 표시되던 오류 수정)
+    const loanAmountNum = getLoanAmountValue();
+    const loanAmount = loanAmountNum.toLocaleString('ko-KR');
+    const marginRate = parseFloat(document.getElementById('marginRate').value);
+    const proposedRate = (2.35 + marginRate).toFixed(2);
+    const rorwaText = document.getElementById('res-rorwa').innerText;
+
+    // RORWA 산출에 사용된(=선택된) 대출과목 기준으로 제안서 작성 (기존: 무조건 차입금이 가장 큰 mainBank 기준 → 수정)
+    const loan = getSelectedLoan(comp) || { bank: comp.mainBank, type: '', rate: comp.avgRate };
+
+    document.getElementById('prop-comp-name').innerText = comp.name + ' 귀중';
+    document.getElementById('prop-loan').innerText = loanAmount + ' 백만원';
+    document.getElementById('prop-rate').innerText = '연 ' + proposedRate + '%';
+    document.getElementById('prop-cur-bank').innerText = loan.bank + (loan.type ? ' · ' + loan.type : '');
+    document.getElementById('prop-cur-rate').innerText = '연 ' + loan.rate + ' (추정)';
+    document.getElementById('prop-new-rate').innerText = '연 ' + proposedRate + '% 수준 (우대)';
+
+    // AI 도우미: 재무데이터 + RORWA 시산 결과를 바탕으로 맞춤 제안 요약 자동 생성 (선택된 대출과목 기준)
+    const rateDiff = (parseFloat(loan.rate) - parseFloat(proposedRate)).toFixed(2);
+    document.getElementById('prop-ai-summary').innerHTML =
+      `${comp.name}은(는) 현재 ${loan.bank}을(를) 통해 이용 중인 ${loan.type || '대출'} 상품에 대해 추정 연 ${loan.rate} 수준의 금리를 부담하고 있는 것으로 분석됩니다. ` +
+      `금번 산출된 RORWA ${rorwaText} 기준, 당행은 ${loanAmount}백만원 규모를 연 ${proposedRate}% 조건(기존 대비 약 ${rateDiff > 0 ? rateDiff : '0.00'}%p 우대)으로 대환 제안할 여력이 확인됩니다. ` +
+      `${comp.ew === '정상' ? 'CRETOP 조기경보 등급이 정상으로 여신 취급에 리스크 부담이 낮으며,' : 'CRETOP 조기경보 등급이 주의 단계이므로 담보 및 사후관리 조건을 병행 검토할 필요가 있으며,'} ` +
+      `${comp.yearsOld <= 7 ? '설립 ' + comp.yearsOld + '년차로 한국은행 C1(창업·벤처) 자금 활용이 가능해 금리 매력도를 더 높일 수 있는 구조입니다.' : '한국은행 C2(중소기업) 자금 활용 여지가 있어 대환 시 추가 금리 인하 협상 여지가 있습니다.'}`;
+
+    document.getElementById('proposalModal').classList.remove('hidden');
+    safeCreateIcons();
+  }
+
+  // ============ AI 상담 스크립트 자동 생성 (AI 도우미) ============
+  function openScriptModal() {
+    const comp = companyData.find(c => c.id === selectedCompanyId);
+    if(!comp) return;
+
+    // RORWA 산출에 사용된(=선택된) 대출과목 기준으로 상담 스크립트 작성 (기존: 무조건 차입금이 가장 큰 mainBank 기준 → 수정)
+    const loan = getSelectedLoan(comp) || { bank: comp.mainBank, type: '', rate: comp.avgRate, duePeriod: null };
+    let loanMaturityText = comp.maturityPeriod;
+    if (loan.duePeriod) {
+      const dueDays = parseInt(String(loan.duePeriod).replace('D-', '')) || 0;
+      loanMaturityText = `D-${dueDays} (${Math.round(dueDays / 30 * 10) / 10}개월 남음)`;
+    }
+
+    document.getElementById('script-comp-name').innerText = comp.name + ' 담당자용 상담 스크립트';
+
+    document.getElementById('script-opening').innerText =
+      `"안녕하십니까, 대표님. ${comp.industry} 업종에서 ${comp.yearsOld}년째 사업을 안정적으로 이끌어 오신 점 먼저 축하드립니다. ` +
+      `저희가 최근 재무제표와 등기 현황을 검토해 보니, 현재 ${loan.bank}의 ${loan.type || '대출'} 조건보다 유리한 대환 여신을 제안드릴 수 있는 타이밍이라 연락드렸습니다."`;
+
+    const points = [];
+    points.push(`현재 <strong>${loan.bank}</strong>의 <strong>${loan.type || '대출'}</strong>(추정 금리 ${loan.rate})의 만기가 <strong>${loanMaturityText}</strong> 남아 있어, 만기 도래 전 선제적으로 대환 조건을 안내하며 접근하세요.`);
+    if (comp.cashRatioNum >= 7) {
+      points.push(`현금성자산이 ${comp.cash}로 매출 대비 ${comp.cashRatioNum}%에 달해 유동성이 풍부한 상태이므로, MMDA·기업자유예금 등 저원가성 예금 유치를 자연스럽게 함께 제안하세요.`);
+    } else {
+      points.push(`현금 보유는 보수적이지만 재무구조는 안정적이므로, 운전자금 한도 여유를 강조하며 접근하는 것이 효과적입니다.`);
+    }
+    if (comp.ew !== '정상') {
+      points.push(`CRETOP 조기경보 등급이 '주의'로 분류되어 있으니, 금리 조건보다는 <strong>담보 보강 및 리스크 관리 파트너</strong>로서의 신뢰를 먼저 전달하세요.`);
+    } else {
+      points.push(`CRETOP 조기경보 등급이 '정상'으로 리스크가 낮으므로, 우대금리 조건을 적극적으로 제시해도 좋은 고객입니다.`);
+    }
+    points.push(`${comp.yearsOld <= 7 ? '설립 ' + comp.yearsOld + '년차 요건을 충족해 한국은행 C1(창업·벤처) 자금 연계가 가능하니, 정책자금 활용 이점을 강조하세요.' : '한국은행 C2(중소기업) 자금 지원 요건을 함께 안내하며 정책자금 활용 여지를 설명하세요.'}`);
+
+    document.getElementById('script-points').innerHTML = points.map(p => `
+      <li class="flex items-start gap-2">
+        <span class="w-4 h-4 mt-0.5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0" style="background:var(--ai-grad);">✓</span>
+        <span>${p}</span>
+      </li>`).join('');
+
+    document.getElementById('script-objection').innerText =
+      `예상 반론: "지금 거래 중인 은행과 관계가 있어서..." → 응대 포인트: 대환은 기존 관계를 끊는 것이 아니라 선택지를 넓히는 것임을 강조하고, ` +
+      `RORWA 시산 결과를 근거로 제안 금리(연 ${document.getElementById('res-spot-margin') ? document.getElementById('res-spot-margin').innerText : ''} 마진 기준)가 실제로 유리함을 수치로 보여주세요.`;
+
+    document.getElementById('aiScriptModal').classList.remove('hidden');
+    safeCreateIcons();
+  }
+
+  function closeScriptModal() {
+    document.getElementById('aiScriptModal').classList.add('hidden');
+  }
+
+  function closeProposalModal() {
+    document.getElementById('proposalModal').classList.add('hidden');
+  }
+</script>
+<script>
+  // 모바일 가독성: 표를 가로 스크롤 컨테이너로 감싸기
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('table').forEach(function (t) {
+      if (t.parentElement && t.parentElement.classList.contains('table-scroll')) return;
+      var wrap = document.createElement('div');
+      wrap.className = 'table-scroll';
+      t.parentNode.insertBefore(wrap, t);
+      wrap.appendChild(t);
+    });
+  });
+</script>
+</body>
+</html>
